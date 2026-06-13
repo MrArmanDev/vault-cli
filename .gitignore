@@ -1,0 +1,5 @@
+cli/target/
+config/target/
+deamon/target/
+
+**/target/
