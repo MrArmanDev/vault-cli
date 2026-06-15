@@ -12,6 +12,15 @@ pub enum Commands {
     User {
         #[command(subcommand)]
         user: UserCommands,
+    },
+
+    Unlock,
+
+    Lock,
+
+    Default {
+        #[arg(short, long)]
+        name : String
     }
     
 }

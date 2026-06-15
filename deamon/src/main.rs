@@ -1,9 +1,7 @@
-use std::time::Duration;
-
 use clap::Parser;
 use config::{SOCKET_PATH, error::VaultCliError, request::Request, response::Response};
 use keyring::Entry;
-use sqlx::postgres::PgPoolOptions;
+
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::UnixListener,
@@ -11,12 +9,13 @@ use tokio::{
 
 use crate::{
     cli::cli::{Cli, Commands},
+    confiig::AppStates,
     handler::handler::handle,
     worker::worker::initialize,
 };
 
 mod cli;
-mod error;
+mod confiig;
 mod handler;
 mod helper;
 mod worker;
@@ -44,16 +43,15 @@ async fn main() -> Result<(), VaultCliError> {
             let enry = Entry::new("vaultcli", "db-url")?;
             let url = enry.get_password()?;
 
-            let pool = PgPoolOptions::new()
-                .max_connections(5)
-                .acquire_timeout(Duration::from_secs(3))
-                .connect(&url)
-                .await?;
+            let app = AppStates::new(&url).await?;
 
             loop {
                 let (mut stream, _) = listener.accept().await?;
 
-                let cpool = pool.clone();
+
+                let key = app.key.clone();
+
+                let cpool = app.pool.clone();
 
                 tokio::spawn(async move {
                     let mut buf = vec![0u8; 4096];
@@ -91,7 +89,7 @@ async fn main() -> Result<(), VaultCliError> {
                         }
                     };
 
-                    let response = handle(command, cpool).await;
+                    let response = handle(command, cpool, key).await;
                     let response_bytes = match serde_json::to_vec(&response) {
                         Ok(bytes) => bytes,
                         Err(err) => {
