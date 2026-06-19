@@ -6,6 +6,7 @@ use tokio::sync::Mutex;
 
 pub type Key = Arc<Mutex<Option<[u8; 32]>>>;
 
+#[derive(Debug, Clone)]
 pub struct AppStates {
     pub pool: PgPool,
     pub key: Key,
@@ -23,4 +24,13 @@ impl AppStates {
             key: Arc::new(Mutex::new(None)),
         })
     }
+}
+
+
+#[derive(sqlx::FromRow)]
+#[allow(dead_code)]
+pub struct UserRepo {
+    pub id: i32,
+    pub master: String,
+    pub is_default: bool,
 }

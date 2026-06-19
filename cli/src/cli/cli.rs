@@ -20,9 +20,13 @@ pub enum Commands {
 
     Default {
         #[arg(short, long)]
-        name : String
-    }
-    
+        name: String,
+    },
+
+    Vault {
+        #[command(subcommand)]
+        vault: Vault,
+    },
 }
 
 #[derive(Subcommand)]
@@ -44,5 +48,29 @@ pub enum UserCommands {
         #[arg(short, long)]
         new_name: String,
     },
+}
 
+#[derive(Subcommand)]
+pub enum Vault {
+    Add {
+        #[arg(short, long)]
+        username: String,
+
+        #[arg(short, long)]
+        app: String,
+
+        #[arg(short = 'H', long)]
+        hint: String,
+
+        #[arg(short, long)]
+        master: Option<String>,
+    },
+
+    Get {
+        #[arg(short, long)]
+        username: Option<String>,
+
+        #[arg(short, long)]
+        app: Option<String>,
+    },
 }

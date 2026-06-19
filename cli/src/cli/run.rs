@@ -1,11 +1,11 @@
 use crate::{
-    cli::cli::{Cli, Commands, UserCommands},
-    helper::helper::unlock,
+    cli::cli::{Cli, Commands, UserCommands, Vault},
+    helper::helper::{add_pass, unlock},
 };
 use clap::Parser;
 use config::{
     error::VaultCliError,
-    request::{Request, UserRequest},
+    request::{Request, UserRequest, Vault as ReqVault, VaultGet},
 };
 
 pub fn run() -> Result<Request, VaultCliError> {
@@ -26,7 +26,23 @@ pub fn run() -> Result<Request, VaultCliError> {
         },
         Commands::Lock => Ok(Request::Lock),
 
-        Commands::Default { name } => Ok(Request::Default(name))
+        Commands::Default { name } => Ok(Request::Default(name)),
 
+        Commands::Vault { vault } => match vault {
+            Vault::Add {
+                username,
+                app,
+                hint,
+                master
+            } => match add_pass(username, app, hint, master) {
+                Ok(v) => Ok(v),
+                Err(e) => Err(e),
+            },
+
+            Vault::Get {
+                username,
+                app
+            } => Ok(Request::Vault(ReqVault::Get(VaultGet {username, app})))
+        },
     }
 }

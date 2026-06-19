@@ -3,13 +3,13 @@ use serde::{Deserialize, Serialize};
 use crate::error::VaultCliError;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Response {
+pub struct Response<T> {
     pub success: bool,
     pub message: String,
-    pub data: Option<String>,
+    pub data: Option<T>,
 }
 
-impl Response {
+impl<T> Response<T> {
     pub fn ok(message: String) -> Self {
         Self {
             success: true,
@@ -25,4 +25,17 @@ impl Response {
             data: None,
         }
     }
+}
+
+
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, )]
+pub struct Password {
+    pub id: i32,
+    pub username: String,
+    pub app: String,
+    pub hint: String,
+    pub master: String,
+    pub password: Vec<u8>,
+    pub nonce: Vec<u8>,
+    pub date: String,
 }

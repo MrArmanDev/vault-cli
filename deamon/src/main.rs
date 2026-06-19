@@ -1,5 +1,10 @@
 use clap::Parser;
-use config::{SOCKET_PATH, error::VaultCliError, request::Request, response::Response};
+use config::{
+    SOCKET_PATH,
+    error::VaultCliError,
+    request::Request,
+    response::{Password, Response},
+};
 use keyring::Entry;
 
 use tokio::{
@@ -48,17 +53,14 @@ async fn main() -> Result<(), VaultCliError> {
             loop {
                 let (mut stream, _) = listener.accept().await?;
 
-
-                let key = app.key.clone();
-
-                let cpool = app.pool.clone();
+                let state = app.clone();
 
                 tokio::spawn(async move {
                     let mut buf = vec![0u8; 4096];
                     let n = match stream.read(&mut buf).await {
                         Ok(n) => n,
                         Err(err) => {
-                            let error_response = Response {
+                            let error_response: Response<Vec<Password>> = Response {
                                 success: false,
                                 message: format!("Failed to read from stream: {}", err),
                                 data: None,
@@ -75,7 +77,7 @@ async fn main() -> Result<(), VaultCliError> {
                     let command: Request = match serde_json::from_slice(&buf[..n]) {
                         Ok(cmd) => cmd,
                         Err(err) => {
-                            let error_response = Response {
+                            let error_response: Response<Vec<Password>> = Response {
                                 success: false,
                                 message: format!("Failed to deserialize command: {}", err),
                                 data: None,
@@ -89,11 +91,11 @@ async fn main() -> Result<(), VaultCliError> {
                         }
                     };
 
-                    let response = handle(command, cpool, key).await;
+                    let response = handle(command, state).await;
                     let response_bytes = match serde_json::to_vec(&response) {
                         Ok(bytes) => bytes,
                         Err(err) => {
-                            let error_response = Response {
+                            let error_response: Response<Vec<Password>> = Response {
                                 success: false,
                                 message: format!("Failed to serialize response: {}", err),
                                 data: None,
