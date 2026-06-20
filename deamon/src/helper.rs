@@ -26,10 +26,11 @@ pub async fn get_master(
             )));
         }
 
-        let result: bool = sqlx::query_scalar("SELECT * FROM users WHERE master = $1")
-            .bind(&v)
-            .fetch_one(pool)
-            .await?;
+        let result: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE master = $1)")
+                .bind(&v)
+                .fetch_one(pool)
+                .await?;
 
         if !result {
             return Err(VaultCliError::AppError(format!(

@@ -72,5 +72,8 @@ pub enum Vault {
 
         #[arg(short, long)]
         app: Option<String>,
+
+        #[arg(short, long)]
+        master: Option<String>,
     },
 }

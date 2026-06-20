@@ -62,15 +62,12 @@ pub async fn initialize(url: String) -> Result<String, VaultCliError> {
         println!("data table created");
     }
 
-    let salt = SaltString::generate(&mut OsRng);
-    let salt_str = salt.as_str().to_string();
-
     let entry = Entry::new("vaultcli", "salt")?;
     if entry.get_password().is_err() {
+        let salt = SaltString::generate(&mut OsRng);
+        let salt_str = salt.as_str().to_string();
         entry.set_password(&salt_str)?;
     }
-
-    println!("Salt: {}", salt_str);
 
     Ok("Database initialized successfully".to_string())
 }
@@ -137,6 +134,32 @@ pub mod user {
                 "Invalid username. Only alphanumeric characters and underscores are allowed."
                     .to_string(),
             ));
+        }
+
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE master = $1)")
+                .bind(&old_name)
+                .fetch_one(pool)
+                .await?;
+
+        if !exists {
+            return Err(VaultCliError::AppError(format!(
+                "User '{}' not found",
+                old_name
+            )));
+        }
+
+        let exists: bool =
+            sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE master = $1)")
+                .bind(&new_name)
+                .fetch_one(pool)
+                .await?;
+
+        if exists {
+            return Err(VaultCliError::AppError(format!(
+                "User '{}' already exists",
+                new_name
+            )));
         }
 
         let result = sqlx::query("UPDATE users SET master = $1 WHERE master = $2")
@@ -304,7 +327,7 @@ pub mod vault {
         data: VaultGet,
         state: &AppStates,
     ) -> Result<(String, Vec<Password>), VaultCliError> {
-        let Some(master) = get_master(None, &state.pool).await? else {
+        let Some(master) = get_master(data.master, &state.pool).await? else {
             return Err(VaultCliError::AppError(
                 "Default user is not set please provide user or set default user".to_string(),
             ));
@@ -360,6 +383,6 @@ pub mod vault {
             }
         }
 
-        Ok((format!("yes"), data))
+        Ok((format!("Passwords retrieved successfully"), data))
     }
 }

@@ -42,9 +42,10 @@ pub struct VaultAdd {
 
 
 
-#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct VaultGet {
     pub username: Option<String>,
     pub app: Option<String>,
+    pub master: Option<String>, 
 
 }

@@ -41,8 +41,9 @@ pub fn run() -> Result<Request, VaultCliError> {
 
             Vault::Get {
                 username,
-                app
-            } => Ok(Request::Vault(ReqVault::Get(VaultGet {username, app})))
+                app,
+                master
+            } => Ok(Request::Vault(ReqVault::Get(VaultGet {username, app, master})))
         },
     }
 }

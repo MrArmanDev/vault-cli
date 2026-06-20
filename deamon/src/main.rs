@@ -41,6 +41,7 @@ async fn main() -> Result<(), VaultCliError> {
             }
         }
         Commands::Start => {
+            let _ = std::fs::remove_file(SOCKET_PATH);
             let listener = UnixListener::bind(SOCKET_PATH)?;
 
             println!("Vault Cli Server Start.");
@@ -56,9 +57,9 @@ async fn main() -> Result<(), VaultCliError> {
                 let state = app.clone();
 
                 tokio::spawn(async move {
-                    let mut buf = vec![0u8; 4096];
-                    let n = match stream.read(&mut buf).await {
-                        Ok(n) => n,
+                    let mut len_buf = [0u8; 4];
+                    match stream.read_exact(&mut len_buf).await {
+                        Ok(_) => (),
                         Err(err) => {
                             let error_response: Response<Vec<Password>> = Response {
                                 success: false,
@@ -67,14 +68,41 @@ async fn main() -> Result<(), VaultCliError> {
                             };
 
                             if let Ok(err) = serde_json::to_vec(&error_response) {
+                                let len = err.len() as u32;
+
+                                let _ = stream.write_all(&len.to_be_bytes()).await;
                                 let _ = stream.write_all(&err).await;
                             }
 
                             return;
                         }
-                    };
+                    }
 
-                    let command: Request = match serde_json::from_slice(&buf[..n]) {
+                    let len = u32::from_be_bytes(len_buf) as usize;
+
+                    let mut buf = vec![0u8; len];
+
+                    match stream.read_exact(&mut buf).await {
+                        Ok(_) => (),
+                        Err(err) => {
+                            let error_response: Response<Vec<Password>> = Response {
+                                success: false,
+                                message: format!("Failed to read from stream: {}", err),
+                                data: None,
+                            };
+
+                            if let Ok(err) = serde_json::to_vec(&error_response) {
+                                let len = err.len() as u32;
+
+                                let _ = stream.write_all(&len.to_be_bytes()).await;
+                                let _ = stream.write_all(&err).await;
+                            }
+
+                            return;
+                        }
+                    }
+
+                    let command: Request = match serde_json::from_slice(&buf) {
                         Ok(cmd) => cmd,
                         Err(err) => {
                             let error_response: Response<Vec<Password>> = Response {
@@ -84,6 +112,9 @@ async fn main() -> Result<(), VaultCliError> {
                             };
 
                             if let Ok(err) = serde_json::to_vec(&error_response) {
+                                let len = err.len() as u32;
+
+                                let _ = stream.write_all(&len.to_be_bytes()).await;
                                 let _ = stream.write_all(&err).await;
                             }
 
@@ -102,12 +133,19 @@ async fn main() -> Result<(), VaultCliError> {
                             };
 
                             if let Ok(err) = serde_json::to_vec(&error_response) {
+                                let len = err.len() as u32;
+
+                                let _ = stream.write_all(&len.to_be_bytes()).await;
                                 let _ = stream.write_all(&err).await;
                             }
 
                             return;
                         }
                     };
+
+                    let len = response_bytes.len() as u32;
+
+                    let _ = stream.write_all(&len.to_be_bytes()).await;
 
                     let _ = stream.write_all(&response_bytes).await;
                 });

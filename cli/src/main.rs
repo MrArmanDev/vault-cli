@@ -20,13 +20,23 @@ async fn main() -> Result<(), VaultCliError> {
 
     let bytes = serde_json::to_vec(&req)?;
 
+    let len = bytes.len() as u32;
+    
+
     let mut stream = UnixStream::connect(SOCKET_PATH).await?;
+
+    stream.write_all(&len.to_be_bytes()).await?;
     stream.write_all(&bytes).await?;
 
-    let mut buf = vec![0u8; 4096];
+    let mut len_buf = [0u8; 4];
+    stream.read_exact(&mut len_buf).await?;
 
-    let n = stream.read(&mut buf).await?;
-    let res: Response<Vec<Password>> = serde_json::from_slice(&buf[..n])?;
+    let len = u32::from_be_bytes(len_buf) as usize;
+
+    let mut buf = vec![0u8; len];
+
+    stream.read_exact(&mut buf).await?;
+    let res: Response<Vec<Password>> = serde_json::from_slice(&buf)?;
 
     if res.success {
         println!("Success: {}", res.message);
