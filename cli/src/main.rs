@@ -38,8 +38,11 @@ async fn main() -> Result<(), VaultCliError> {
             for pass in v {
                 let password = match String::from_utf8(pass.password) {
                     Ok(v) => v,
-                    Err(e) => {
-                        eprintln!("Error: {}", e);
+                    Err(_) => {
+                        eprintln!(
+                            "{} Decryption failed. The current master key does not match the key used to encrypt this entry. Unlock the vault with the correct master password and try again:\nvault get --username {} --app {}",
+                            pass.username, pass.username, pass.app
+                        );
                         continue;
                     }
                 };

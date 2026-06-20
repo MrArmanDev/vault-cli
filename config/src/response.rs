@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::error::VaultCliError;
@@ -37,5 +38,5 @@ pub struct Password {
     pub master: String,
     pub password: Vec<u8>,
     pub nonce: Vec<u8>,
-    pub date: String,
+    pub created_at: DateTime<Utc>,
 }

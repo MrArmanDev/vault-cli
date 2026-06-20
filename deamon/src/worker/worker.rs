@@ -241,7 +241,8 @@ pub mod vault {
     };
     use config::{
         error::VaultCliError,
-        request::{VaultAdd, VaultGet,}, response::Password,
+        request::{VaultAdd, VaultGet},
+        response::Password,
     };
     use sqlx::Postgres;
 
@@ -321,7 +322,7 @@ pub mod vault {
         let cipher = ChaCha20Poly1305::new(Key::from_slice(&key));
 
         let mut db = sqlx::QueryBuilder::<Postgres>::new(
-            "SELECT id, username, app, hint, master, password, nonce, created_at as date FROM data WHERE 1=1",
+            "SELECT id, username, app, hint, master, password, nonce, created_at FROM data WHERE 1=1",
         );
 
         db.push(" AND master = ");
@@ -350,15 +351,15 @@ pub mod vault {
                 msg: &pass.password,
                 aad: &[],
             };
+
             let text = cipher.decrypt(nonce, payload);
 
-            if let Ok(v) = text {
-                pass.password = v;
+            match text {
+                Ok(v) => pass.password = v,
+                Err(_) => pass.password = pass.password.clone(),
             }
         }
 
-
-
-        Ok((format!("y"), data))
+        Ok((format!("yes"), data))
     }
 }
