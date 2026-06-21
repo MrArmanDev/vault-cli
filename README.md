@@ -123,7 +123,7 @@ CLI                          Daemon
  
 **1. Clone and build**
 ```bash
-git clone https://github.com/you/vaultcli
+git clone https://github.com/MrArmanDev/vault-cli.git
 cd vaultcli
 cargo build
 ```
