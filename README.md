@@ -57,11 +57,13 @@ It is split into two binaries:
 │  data table   →  encrypted passwords + nonces       │
 └─────────────────────────────────────────────────────┘
 
+```
 
 
 ### How a Request Flows
  
 ```
+
 CLI                          Daemon
  │                              │
  │── parse command ──▶          │
